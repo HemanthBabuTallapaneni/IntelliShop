@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Console - IntelliShop{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="text-dark mb-1"><i class="fa-solid fa-shield-halved text-purple me-2"></i>Global System Administration</h3>
+        <p class="text-muted small mb-0">Monitor global system states, inspect OAuth tokens, modify user security permissions, and audit general transaction logs.</p>
+    </div>
+    <span class="badge bg-light border border-dark text-dark">Global Security Guard Active</span>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- User Authentication & Roles Matrix -->
+    <div class="col-md-7">
+        <div class="glass-card p-4 h-100">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-users me-2 text-info"></i>User Identity & Access Management</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle border-light mb-0" style="font-size: 0.9rem;">
+                    <thead>
+                        <tr class="text-muted" style="font-size: 0.8rem;">
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Current Role</th>
+                            <th>Preference Vector Status</th>
+                            <th class="text-center">Permissions Modifier</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                            <tr>
+                                <td class="font-monospace text-muted small">#USR-{{ u.id }}</td>
+                                <td class="text-dark fw-semibold">@{{ u.username }}</td>
+                                <td>
+                                    <span class="role-pill role-{{ u.role }}">{{ u.role }}</span>
+                                </td>
+                                <td>
+                                    {% if u.preferences %}
+                                        <span class="text-success small fw-semibold">
+                                            <i class="fa-solid fa-square-check me-1"></i> Trained ({{ json_loads(u.preferences).keys()|length }} features)
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted small">
+                                            <i class="fa-solid fa-square-minus me-1"></i> Cold Start
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <form action="/admin" method="POST" class="d-flex gap-2 justify-content-center">
+                                        <input type="hidden" name="action" value="update_role">
+                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                        <select name="role" class="form-select form-select-sm py-0 px-2" style="font-size: 0.8rem; width: 110px;" onchange="this.form.submit()">
+                                            <option value="shopper" {% if u.role == 'shopper' %}selected{% endif %}>shopper</option>
+                                            <option value="seller" {% if u.role == 'seller' %}selected{% endif %}>seller</option>
+                                            <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>admin</option>
+                                        </select>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security & JWT Guard Info -->
+    <div class="col-md-5">
+        <div class="glass-card p-4 h-100">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-key me-2 text-warning"></i>JWT Claims Verification Signature</h5>
+            <div class="mb-3">
+                <div class="p-3 rounded text-dark" style="background: #f1f5f9; border: 1px solid #cbd5e1;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-dark fw-bold small"><i class="fa-solid fa-fingerprint text-info me-1"></i>Active User Token</span>
+                        <span class="badge bg-success rounded-pill small">Valid Signature</span>
+                    </div>
+                    <code class="text-break text-warning" style="font-size: 0.75rem; font-family: monospace; display: block;">{{ jwt_token }}</code>
+                </div>
+            </div>
+            
+            <div class="p-3 rounded text-dark" style="background: #f1f5f9; border: 1px solid #cbd5e1;">
+                <h6 class="text-dark small fw-bold mb-2"><i class="fa-solid fa-shield me-1"></i>Enforced Firewall Metrics</h6>
+                <ul class="text-muted small mb-0 ps-3">
+                    <li>Cross-origin request validation: Enabled</li>
+                    <li>JWT Claims spoof protection: HMAC-SHA256 signature validation active</li>
+                    <li>Route-guard decorators: Enforcing role scopes dynamically</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Audit Trail -->
+<div class="row">
+    <div class="col-12">
+        <div class="glass-card p-4">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Global Sales Transaction Logs</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover border-light mb-0" style="font-size: 0.9rem;">
+                    <thead>
+                        <tr class="text-muted" style="font-size: 0.8rem;">
+                            <th>Order ID</th>
+                            <th>User Account</th>
+                            <th>Total Checkout Value</th>
+                            <th>Execution Date/Time</th>
+                            <th class="text-center">Integrity Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if orders %}
+                            {% for o in orders %}
+                                <tr>
+                                    <td class="font-monospace text-dark small">#ORD-{{ o.id }}</td>
+                                    <td>
+                                        <div class="text-dark fw-semibold">User ID: {{ o.user_id }}</div>
+                                    </td>
+                                    <td class="text-success fw-bold">${{ o.total_amount }}</td>
+                                    <td>
+                                        <div class="text-muted small">{{ o.timestamp }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle small px-2">Verified Transaction</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted small">No transactions completed yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

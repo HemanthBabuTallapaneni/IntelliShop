@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopper Sign In - IntelliShop</title>
+    <!-- Google Fonts: Inter & Space Grotesk -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --bg-glass: rgba(255, 255, 255, 0.9);
+            --border-glass: rgba(15, 23, 42, 0.08);
+            --accent-purple: #111111; /* Matte Black */
+            --accent-cyan: #0f172a; /* Deep Navy */
+            --text-main: #111111;
+            --text-muted: #475569;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 50% 50%, #f1f5f9 0%, var(--bg-primary) 80%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        h2, h5, .brand-font {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .glass-card {
+            background: var(--bg-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .form-control {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: var(--text-main) !important;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+        }
+
+        .form-control:focus {
+            box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.05) !important;
+            border-color: var(--accent-cyan) !important;
+        }
+
+        .btn-submit {
+            background: var(--accent-cyan);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 0.75rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn-submit:hover {
+            background: #1e293b;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .social-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 0.65rem;
+            font-weight: 500;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .social-btn:hover {
+            background: #f9fafb;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin: 1.5rem 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: .75em;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: .75em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-card p-5">
+        <div class="text-center mb-4">
+            <a href="/" class="text-decoration-none d-inline-flex p-3 rounded-circle mb-3" style="background: rgba(15, 23, 42, 0.03); border: 1px solid rgba(15, 23, 42, 0.08);">
+                <i class="fa-solid fa-bag-shopping fs-2" style="color: var(--accent-cyan);"></i>
+            </a>
+            <h2 class="mb-1 text-dark">Shopper Sign In</h2>
+            <p class="text-muted small">Access your personalized shopping feed</p>
+        </div>
+
+        {% if error %}
+            <div class="alert alert-danger border-0 text-center small p-2 mb-3" style="background: rgba(220, 53, 69, 0.08); color: #dc2626; border-radius: 8px;">
+                <i class="fa-solid fa-circle-exclamation me-1"></i> {{ error }}
+            </div>
+        {% endif %}
+
+        <form action="/shopper/login" method="POST" class="mb-3">
+            <div class="mb-3">
+                <label for="email" class="form-label small text-muted">Email address</label>
+                <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
+            </div>
+            <div class="mb-4">
+                <label for="password" class="form-label small text-muted">Password</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-submit">
+                <i class="fa-solid fa-right-to-bracket me-2"></i> Sign In
+            </button>
+        </form>
+
+        <div class="text-center mb-3">
+            <a href="/shopper/register" class="text-decoration-none small" style="color: var(--accent-cyan); font-weight: 500;">
+                New to the platform? Sign Up as Shopper
+            </a>
+        </div>
+
+        <div class="divider">or sign in with</div>
+
+        <div class="row g-2">
+            <div class="col-4">
+                <form action="/social-login" method="POST">
+                    <input type="hidden" name="provider" value="google">
+                    <input type="hidden" name="role" value="shopper">
+                    <button type="submit" class="social-btn">
+                        <i class="fa-brands fa-google text-danger"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="col-4">
+                <form action="/social-login" method="POST">
+                    <input type="hidden" name="provider" value="github">
+                    <input type="hidden" name="role" value="shopper">
+                    <button type="submit" class="social-btn">
+                        <i class="fa-brands fa-github text-dark"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="col-4">
+                <form action="/social-login" method="POST">
+                    <input type="hidden" name="provider" value="microsoft">
+                    <input type="hidden" name="role" value="shopper">
+                    <button type="submit" class="social-btn">
+                        <i class="fa-brands fa-microsoft text-primary"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

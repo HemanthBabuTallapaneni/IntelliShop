@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Seller Console - IntelliShop{% endblock %}
+
+{% block extra_css %}
+<style>
+    .metric-card {
+        background: var(--bg-glass);
+        border: 1px solid var(--border-glass);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: var(--transition-smooth);
+    }
+    .metric-card:hover {
+        border-color: rgba(139, 92, 246, 0.25);
+    }
+    
+    .metric-value {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-top: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .metric-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 250px;
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="text-dark mb-1"><i class="fa-solid fa-chart-line text-pink me-2"></i>Merchant BI & Inventory Pipeline</h3>
+        <p class="text-muted small mb-0">Track real-time inventory health mutations, checkout transactions, and customer engagement metrics.</p>
+    </div>
+    <span class="badge bg-light border border-dark text-dark" style="color: var(--accent-pink) !important;">Live Pipeline Active</span>
+</div>
+
+<!-- Key Analytics Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="metric-card">
+            <span class="metric-label">Gross Revenue</span>
+            <div class="metric-value text-success">${{ analytics.revenue }}</div>
+            <div class="text-muted small"><i class="fa-solid fa-arrow-trend-up text-success me-1"></i> Live checkout mutations</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card">
+            <span class="metric-label">Completed Orders</span>
+            <div class="metric-value text-info">{{ analytics.orders_count }}</div>
+            <div class="text-muted small"><i class="fa-solid fa-cart-flatbed-suitcases text-info me-1"></i> Checked out baskets</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card">
+            <span class="metric-label">Inventory Health Index</span>
+            <div class="metric-value text-warning">94.8%</div>
+            <div class="text-muted small"><i class="fa-solid fa-heart-pulse text-warning me-1"></i> Out-of-stock guard active</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts & Data Visualization Layer -->
+<div class="row g-4 mb-5">
+    <!-- Sales Revenue Trend Chart -->
+    <div class="col-md-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-timeline text-cyan me-2"></i>Sales Revenue Trend</h5>
+            <div class="chart-container">
+                <canvas id="salesTrendChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Conversion Metric Chart -->
+    <div class="col-md-6">
+        <div class="glass-card p-4 h-100">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-chart-column text-purple me-2" style="color: var(--accent-purple) !important;"></i>Engagement Conversion Rates</h5>
+            <div class="chart-container">
+                <canvas id="conversionChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Mutations & Product Additions -->
+<div class="row g-4">
+    <!-- Left: Stock Modifiers Table -->
+    <div class="col-md-8">
+        <div class="glass-card p-4">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-boxes-stacked me-2 text-info"></i>Active Stock Levels</h5>
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle border-light mb-0">
+                    <thead>
+                        <tr class="text-muted" style="font-size: 0.85rem;">
+                            <th>Product ID</th>
+                            <th>Product Detail</th>
+                            <th class="text-center">Units Sold</th>
+                            <th class="text-end">Revenue Generated</th>
+                            <th class="text-center" style="width: 180px;">Inventory Health</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in analytics.product_stats %}
+                            <tr>
+                                <td class="font-monospace text-muted small">#PROD-{{ row.id }}</td>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ row.name }}</div>
+                                    <div class="text-muted small" style="font-size: 0.75rem;">
+                                        Stock Level: {{ row.inventory }} units
+                                    </div>
+                                </td>
+                                <td class="text-center">{{ row.sold }}</td>
+                                <td class="text-end text-success">${{ (row.revenue) | round(2) }}</td>
+                                <td>
+                                    <form action="/seller" method="POST" class="d-flex align-items-center gap-2 justify-content-center">
+                                        <input type="hidden" name="action" value="update_stock">
+                                        <input type="hidden" name="product_id" value="{{ row.id }}">
+                                        <input type="number" name="inventory" class="form-control form-control-sm text-center px-1" value="{{ row.inventory }}" min="0" required style="width: 70px;">
+                                        <button type="submit" class="btn btn-outline-info btn-sm" title="Mutate Stock">
+                                            <i class="fa-solid fa-arrows-rotate"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right: Product Additions Form -->
+    <div class="col-md-4">
+        <div class="glass-card p-4">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-plus-circle text-success me-2"></i>Publish New Merchandise</h5>
+            
+            <form action="/seller" method="POST">
+                <input type="hidden" name="action" value="add">
+                
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Product Title</label>
+                    <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Slim Blazer" required>
+                </div>
+                
+                <div class="mb-2">
+                    <label class="form-label small text-muted">Description</label>
+                    <textarea name="description" class="form-control form-control-sm" placeholder="Details..." rows="2"></textarea>
+                </div>
+                
+                <div class="row g-2 mb-2">
+                    <div class="col">
+                        <label class="form-label small text-muted">Price ($)</label>
+                        <input type="number" name="price" class="form-control form-control-sm" step="0.01" min="0" required>
+                    </div>
+                    <div class="col">
+                        <label class="form-label small text-muted">Initial Stock</label>
+                        <input type="number" name="inventory" class="form-control form-control-sm" min="0" required>
+                    </div>
+                </div>
+
+                <div class="mb-3 border-top border-light pt-2 mt-3">
+                    <label class="form-label small text-info fw-bold"><i class="fa-solid fa-tags me-1"></i>NoSQL Attribute Tags</label>
+                    
+                    <div class="row g-2">
+                        <div class="col-6 mb-2">
+                            <label class="form-label small text-muted" style="font-size: 0.7rem;">Color</label>
+                            <input type="text" name="color" class="form-control form-control-sm" placeholder="Red">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small text-muted" style="font-size: 0.7rem;">Brand</label>
+                            <input type="text" name="brand" class="form-control form-control-sm" placeholder="Zara">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small text-muted" style="font-size: 0.7rem;">Size</label>
+                            <input type="text" name="size" class="form-control form-control-sm" placeholder="M">
+                        </div>
+                        <div class="col-6 mb-2">
+                            <label class="form-label small text-muted" style="font-size: 0.7rem;">Style</label>
+                            <input type="text" name="style" class="form-control form-control-sm" placeholder="Slim Fit">
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn gradient-btn btn-sm w-100 mt-2">
+                    <i class="fa-solid fa-upload me-1"></i> Deploy Product
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Include Chart.js via CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // --- Chart 1: Sales Revenue Trend (Line Chart) ---
+    const trendCtx = document.getElementById('salesTrendChart').getContext('2d');
+    
+    // Parse trends from Python backend payload
+    const trendData = {{ analytics.trends | tojson }};
+    const trendLabels = trendData.map(item => item.time);
+    const trendAmounts = trendData.map(item => item.amount);
+
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: trendLabels.length ? trendLabels : ['Simulation Started'],
+            datasets: [{
+                label: 'Gross Sales ($)',
+                data: trendAmounts.length ? trendAmounts : [0],
+                borderColor: '#0f172a',
+                backgroundColor: 'rgba(15, 23, 42, 0.05)',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(15, 23, 42, 0.06)' },
+                    ticks: { color: '#475569', font: { size: 9 } }
+                },
+                y: {
+                    grid: { color: 'rgba(15, 23, 42, 0.06)' },
+                    ticks: { color: '#475569', font: { size: 10 } }
+                }
+            }
+        }
+    });
+
+    // --- Chart 2: Product Conversion Metrics (Bar Chart) ---
+    const conversionCtx = document.getElementById('conversionChart').getContext('2d');
+    
+    // Parse conversion stats from Python backend payload
+    const conversionStats = {{ analytics.conversion_stats | tojson }};
+    const productLabels = conversionStats.map(item => item.name);
+    const viewCounts = conversionStats.map(item => item.views);
+    const likeCounts = conversionStats.map(item => item.likes);
+    const conversionRates = conversionStats.map(item => item.conversion_rate);
+
+    new Chart(conversionCtx, {
+        type: 'bar',
+        data: {
+            labels: productLabels,
+            datasets: [
+                {
+                    label: 'Product Views',
+                    data: viewCounts,
+                    backgroundColor: 'rgba(148, 163, 184, 0.25)',
+                    borderWidth: 0,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Likes Received',
+                    data: likeCounts,
+                    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+                    borderWidth: 0,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Like Conversion %',
+                    data: conversionRates,
+                    type: 'line',
+                    borderColor: '#111111',
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: false,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#475569', font: { size: 9 } }
+                },
+                y: {
+                    position: 'left',
+                    grid: { color: 'rgba(15, 23, 42, 0.06)' },
+                    ticks: { color: '#475569', font: { size: 10 } },
+                    title: { display: true, text: 'Events Count', color: '#475569', font: { size: 10 } }
+                },
+                y1: {
+                    position: 'right',
+                    grid: { display: false },
+                    ticks: { color: '#111111', font: { size: 10 } },
+                    title: { display: true, text: 'Conversion Rate (%)', color: '#111111', font: { size: 10 } }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

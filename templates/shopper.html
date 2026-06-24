@@ -1,0 +1,596 @@
+{% extends "base.html" %}
+
+{% block title %}Shop Feed - IntelliShop{% endblock %}
+
+{% block extra_css %}
+<style>
+    .product-card {
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+    }
+    
+    .product-card:hover {
+        transform: translateY(-4px);
+    }
+    
+    .product-img-container {
+        height: 180px;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .product-img {
+        object-fit: cover;
+        width: 100%;
+        height: 100%;
+        transition: var(--transition-smooth);
+    }
+
+    .product-card:hover .product-img {
+        transform: scale(1.05);
+    }
+    
+    .product-img-placeholder {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.01));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: var(--accent-cyan);
+    }
+
+    .rec-score-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ffffff;
+        backdrop-filter: blur(8px);
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0.25rem 0.5rem;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: #111111;
+        z-index: 10;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+
+    .tag-badge {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        margin-right: 0.25rem;
+        margin-bottom: 0.25rem;
+        display: inline-block;
+    }
+
+    .like-btn {
+        background: rgba(15, 23, 42, 0.05);
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        transition: var(--transition-smooth);
+        z-index: 15;
+    }
+    .like-btn:hover {
+        background: #111111;
+        border-color: #111111;
+        color: white;
+    }
+
+    .filter-section {
+        background: var(--bg-glass);
+        border: 1px solid var(--border-glass);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .cart-widget {
+        background: var(--bg-glass);
+        border: 1px solid var(--border-glass);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+
+    .cart-item {
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        padding-bottom: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    .cart-item:last-child {
+        border: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    /* Similar Products inside Modal */
+    .similar-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: var(--transition-smooth);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .similar-card:hover {
+        background: #f9fafb;
+        border-color: var(--accent-cyan);
+    }
+    .similar-img-container {
+        height: 90px;
+        background: #f3f4f6;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Alert Messages -->
+{% if success %}
+    <div class="alert alert-success alert-dismissible fade show border-0 mb-4" role="alert" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+        <i class="fa-solid fa-circle-check me-2"></i> {{ success }}
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endif %}
+{% if error %}
+    <div class="alert alert-danger alert-dismissible fade show border-0 mb-4" role="alert" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error }}
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endif %}
+
+<!-- Hybrid Recommender Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h3 class="text-dark mb-1"><i class="fa-solid fa-wand-magic-sparkles me-2 text-warning"></i>AI Recommender Matrix Feed</h3>
+                <p class="text-muted small mb-0">Hybrid recommendation utilizing Collaborative Overlaps (30%), User Cosine Sim vectors (50%), and historic sales popularity (20%).</p>
+            </div>
+            <span class="badge bg-light border border-dark text-dark">Real-Time Sync</span>
+        </div>
+        
+        <div class="row row-cols-1 row-cols-md-4 g-4">
+            {% if recommendations %}
+                {% for item in recommendations %}
+                    <div class="col">
+                        <div class="glass-card product-card p-3" onclick="openProductDetails({{ item.product.id }})">
+                            <span class="rec-score-badge" title="CB: {{ item.breakdown.content_cb }}, CF: {{ item.breakdown.collab_cf }}, Pop: {{ item.breakdown.popularity }}">
+                                <i class="fa-solid fa-brain me-1"></i> Match: {{ (item.score * 100) | round(1) }}%
+                            </span>
+                            
+                            <div class="product-img-container rounded mb-3">
+                                {% if item.product.image_url %}
+                                    <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="product-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                {% endif %}
+                                <div class="product-img-placeholder" style="{% if item.product.image_url %}display: none;{% endif %}">
+                                    <i class="fa-solid fa-shirt"></i>
+                                </div>
+                            </div>
+                            
+                            <h5 class="text-dark text-truncate mb-1" title="{{ item.product.name }}">{{ item.product.name }}</h5>
+                            <p class="text-muted small text-truncate mb-2">{{ item.product.description }}</p>
+                            
+                            <div class="mb-3">
+                                {% for tag in json_loads(item.product.tags) %}
+                                    <span class="tag-badge">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mt-auto d-flex align-items-center justify-content-between" onclick="event.stopPropagation();">
+                                <span class="text-dark fw-bold fs-5">${{ item.product.price }}</span>
+                                <button onclick="addToCart({{ item.product.id }})" class="btn gradient-btn btn-sm">
+                                    <i class="fa-solid fa-cart-plus"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="glass-card p-4 text-center">
+                        <i class="fa-solid fa-sparkles text-muted fs-2 mb-2"></i>
+                        <p class="text-muted mb-0">Establish interactions (likes or purchases) to boot up personalized Hybrid Recommendations.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<hr class="border-light my-5">
+
+<!-- Discovery & Core Catalog Section -->
+<div class="row">
+    <!-- Left Column: Filters and Cart -->
+    <div class="col-md-3 mb-4">
+        <!-- Search & Filter Card -->
+        <div class="filter-section mb-4">
+            <h5 class="text-dark mb-3"><i class="fa-solid fa-filter me-2 text-info"></i>Dynamic Discovery</h5>
+            
+            <form action="/shopper" method="GET" id="searchFilterForm">
+                <!-- Text Search -->
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" name="query" class="form-control" placeholder="Search 1000+ items..." value="{{ active_query }}">
+                        <button type="submit" class="btn btn-secondary border-0" style="background: rgba(255, 255, 255, 0.15);">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Color Filter -->
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Color</label>
+                    <select name="color" class="form-select small" onchange="this.form.submit()">
+                        <option value="">All Colors</option>
+                        {% for val in attributes.Color | sort %}
+                            <option value="{{ val }}" {% if active_filters.Color == val %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Brand Filter -->
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Brand</label>
+                    <select name="brand" class="form-select small" onchange="this.form.submit()">
+                        <option value="">All Brands</option>
+                        {% for val in attributes.Brand | sort %}
+                            <option value="{{ val }}" {% if active_filters.Brand == val %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Style Filter -->
+                <div class="mb-3">
+                    <label class="form-label small text-muted">Style</label>
+                    <select name="style" class="form-select small" onchange="this.form.submit()">
+                        <option value="">All Styles</option>
+                        {% for val in attributes.Style | sort %}
+                            <option value="{{ val }}" {% if active_filters.Style == val %}selected{% endif %}>{{ val }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                {% if active_query or active_filters.Color or active_filters.Brand or active_filters.Style %}
+                    <a href="/shopper" class="btn btn-outline-danger btn-sm w-100 mt-2">
+                        <i class="fa-solid fa-xmark me-1"></i> Clear Filters
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+        
+        <!-- Cart Widget -->
+        <div class="cart-widget">
+            <h5 class="text-dark mb-3 d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-shopping-cart me-2 text-pink" style="color: var(--accent-pink) !important;"></i>Your Cart</span>
+                {% if cart_items %}
+                    <span class="badge bg-danger rounded-pill">{{ cart_items|length }}</span>
+                {% endif %}
+            </h5>
+            
+            {% if cart_items %}
+                <div class="cart-list mb-3">
+                    {% for item in cart_items %}
+                        <div class="cart-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="text-dark small mb-0">{{ item.name }}</h6>
+                                    <span class="text-muted small">${{ item.price }} x {{ item.quantity }}</span>
+                                </div>
+                                <span class="text-dark fw-bold small">${{ item.subtotal }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3 pt-2 border-top border-light">
+                    <span class="text-muted small">Total Cost:</span>
+                    <span class="text-dark fw-bold fs-5">${{ cart_total }}</span>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <form action="/shopper/cart/clear" method="POST" class="flex-grow-1">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm w-100">Clear</button>
+                    </form>
+                    <form action="/shopper/checkout" method="POST" class="flex-grow-2 w-100">
+                        <button type="submit" class="btn gradient-btn btn-sm w-100">Checkout</button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="fa-solid fa-basket-shopping fs-3 mb-2"></i>
+                    <p class="mb-0">Your basket is currently empty.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Right Column: Product Results -->
+    <div class="col-md-9">
+        <h4 class="text-dark mb-4"><i class="fa-solid fa-cubes me-2 text-cyan"></i>Product Catalog (1000+ Items)</h4>
+        
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            {% if products %}
+                {% for item in products %}
+                    {% set p = item.product %}
+                    <div class="col">
+                        <div class="glass-card product-card p-3" onclick="openProductDetails({{ p.id }})">
+                            <div class="product-img-container rounded mb-3">
+                                {% if p.image_url %}
+                                    <img src="{{ p.image_url }}" alt="{{ p.name }}" class="product-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                {% endif %}
+                                <div class="product-img-placeholder" style="{% if p.image_url %}display: none;{% endif %}">
+                                    <i class="fa-solid fa-shirt"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-start mb-1" onclick="event.stopPropagation();">
+                                <h5 class="text-dark text-truncate mb-0" style="max-width: 70%;" title="{{ p.name }}">{{ p.name }}</h5>
+                                <button onclick="likeProduct({{ p.id }})" class="btn btn-sm like-btn rounded-circle">
+                                    <i class="fa-regular fa-heart"></i>
+                                </button>
+                            </div>
+                            
+                            <p class="text-muted small mb-2 text-truncate">{{ p.description }}</p>
+                            
+                            <div class="mb-3">
+                                {% for tag in json_loads(p.tags) %}
+                                    <span class="tag-badge">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mt-auto d-flex align-items-center justify-content-between" onclick="event.stopPropagation();">
+                                <div>
+                                    <span class="text-dark fw-bold fs-5 d-block">${{ p.price }}</span>
+                                    {% if p.inventory > 0 %}
+                                        <span class="text-success small fw-semibold">In stock ({{ p.inventory }})</span>
+                                    {% else %}
+                                        <span class="text-danger small fw-semibold">Out of Stock</span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if p.inventory > 0 %}
+                                    <button onclick="addToCart({{ p.id }})" class="btn gradient-btn btn-sm">
+                                        <i class="fa-solid fa-cart-plus me-1"></i> Add
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-secondary btn-sm" disabled>Sold Out</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="glass-card p-5 text-center">
+                        <i class="fa-solid fa-circle-info text-muted fs-1 mb-3"></i>
+                        <h5 class="text-dark">No products found</h5>
+                        <p class="text-muted">Adjust search keywords or filtering parameters to locate catalog items.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Product Details Modal with Similar Items -->
+<div class="modal fade" id="productDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content glass-card" style="background: #ffffff; border: 1px solid var(--border-glass);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title text-dark font-monospace" id="modalProductTitle">Product Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <div class="row">
+                    <div class="col-md-5 mb-3">
+                        <div class="rounded overflow-hidden text-center bg-light d-flex align-items-center justify-content-center" style="height: 240px; border: 1px solid var(--border-glass);">
+                            <img id="modalProductImg" src="" alt="Apparel Image" class="img-fluid h-100 object-fit-cover w-100" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="product-img-placeholder h-100 w-100" style="display: none;">
+                                <i class="fa-solid fa-shirt" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-7 mb-3 d-flex flex-column">
+                        <h3 class="text-dark mb-2" id="modalProductPrice">$0.00</h3>
+                        <p class="text-muted small mb-3" id="modalProductDesc">Product description.</p>
+                        
+                        <div class="mb-4 border-top border-light pt-3">
+                            <div class="row text-dark small g-2">
+                                <div class="col-6"><strong>Brand:</strong> <span id="modalProductBrand" class="text-dark fw-bold">-</span></div>
+                                <div class="col-6"><strong>Style:</strong> <span id="modalProductStyle" class="text-dark fw-bold">-</span></div>
+                                <div class="col-6"><strong>Size:</strong> <span id="modalProductSize" class="text-dark fw-bold">-</span></div>
+                                <div class="col-6"><strong>Color:</strong> <span id="modalProductColor" class="text-dark fw-bold">-</span></div>
+                                <div class="col-12 mt-2">
+                                    <strong>Availability Status:</strong> 
+                                    <span id="modalProductStock" class="fw-bold">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-auto d-flex gap-2">
+                            <button id="modalLikeBtn" class="btn btn-outline-danger px-3">
+                                <i class="fa-regular fa-heart me-1"></i> Like Item
+                            </button>
+                            <button id="modalCartBtn" class="btn gradient-btn flex-grow-1">
+                                <i class="fa-solid fa-cart-plus me-1"></i> Add to Basket
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-3 border-top border-light">
+                    <h6 class="text-dark mb-3"><i class="fa-solid fa-wand-magic-sparkles text-warning me-2"></i>Similar Products (Cosine Affinity Matches)</h6>
+                    <div class="row row-cols-1 row-cols-md-4 g-3" id="modalSimilarProducts">
+                        <!-- Loaded via AJAX -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Global details modal instance
+    let detailsModal;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        detailsModal = new bootstrap.Modal(document.getElementById('productDetailsModal'));
+    });
+
+    function openProductDetails(productId) {
+        fetch('/shopper/product/' + productId)
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.error || `HTTP ${response.status}`);
+                }).catch(() => {
+                    throw new Error(`HTTP ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(p => {
+            // 1. Populate modal variables
+            document.getElementById('modalProductTitle').innerText = p.name;
+            document.getElementById('modalProductPrice').innerText = '$' + p.price;
+            document.getElementById('modalProductDesc').innerText = p.description;
+            
+            const img = document.getElementById('modalProductImg');
+            if (p.image_url) {
+                img.src = p.image_url;
+                img.style.display = 'block';
+                img.nextElementSibling.style.display = 'none';
+            } else {
+                img.style.display = 'none';
+                img.nextElementSibling.style.display = 'flex';
+            }
+            
+            // Attributes
+            document.getElementById('modalProductBrand').innerText = p.attributes.Brand || 'N/A';
+            document.getElementById('modalProductStyle').innerText = p.attributes.Style || 'N/A';
+            document.getElementById('modalProductSize').innerText = p.attributes.Size || 'N/A';
+            document.getElementById('modalProductColor').innerText = p.attributes.Color || 'N/A';
+            
+            // Stock level details
+            const stockSpan = document.getElementById('modalProductStock');
+            if (p.inventory > 0) {
+                stockSpan.className = 'text-success';
+                stockSpan.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> In Stock (${p.inventory} units)`;
+                
+                const cartBtn = document.getElementById('modalCartBtn');
+                cartBtn.disabled = false;
+                cartBtn.onclick = function() { addToCart(p.id); };
+                cartBtn.innerText = 'Add to Basket';
+            } else {
+                stockSpan.className = 'text-danger';
+                stockSpan.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Sold Out (Out of Stock)';
+                
+                const cartBtn = document.getElementById('modalCartBtn');
+                cartBtn.disabled = true;
+                cartBtn.innerText = 'Out of Stock';
+            }
+            
+            // Like handler
+            document.getElementById('modalLikeBtn').onclick = function() { likeProduct(p.id); };
+            
+            // 2. Populate similar items dynamically
+            const similarContainer = document.getElementById('modalSimilarProducts');
+            similarContainer.innerHTML = '';
+            
+            if (p.similar_products && p.similar_products.length > 0) {
+                p.similar_products.forEach(item => {
+                    const col = document.createElement('div');
+                    col.className = 'col';
+                    
+                    const imgHtml = item.image_url 
+                        ? `<img src="${item.image_url}" class="product-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                        : '';
+                        
+                    col.innerHTML = `
+                        <div class="similar-card p-2" onclick="openProductDetails(${item.id})">
+                            <div class="similar-img-container rounded mb-2">
+                                ${imgHtml}
+                                <div class="product-img-placeholder h-100 w-100" style="${item.image_url ? 'display:none;' : ''}">
+                                    <i class="fa-solid fa-shirt" style="font-size: 1.2rem;"></i>
+                                </div>
+                            </div>
+                            <span class="text-dark small fw-bold text-truncate d-block mb-1" title="${item.name}">${item.name}</span>
+                            <div class="d-flex justify-content-between align-items-center mt-auto">
+                                <span class="text-success small fw-bold">$${item.price}</span>
+                                <span class="badge bg-light text-dark border" style="font-size:0.6rem; border-color: #cbd5e1 !important;">Match: ${Math.round(item.similarity * 100)}%</span>
+                            </div>
+                        </div>
+                    `;
+                    similarContainer.appendChild(col);
+                });
+            } else {
+                similarContainer.innerHTML = '<div class="col-12 text-center text-muted small py-3">No similarity matches found.</div>';
+            }
+            
+            // 3. Trigger Modal Show
+            detailsModal.show();
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Failed to load product specifications: " + err.message);
+        });
+    }
+
+    function likeProduct(productId) {
+        fetch('/shopper/like/' + productId, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            }
+        });
+    }
+
+    function addToCart(productId) {
+        fetch('/shopper/cart/add/' + productId, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            }
+        })
+        .catch(err => {
+            alert(err.message || 'Failed to add item to cart');
+        });
+    }
+</script>
+{% endblock %}
